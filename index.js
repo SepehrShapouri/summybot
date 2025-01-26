@@ -43,7 +43,6 @@ app.command("/summarize", async ({ command, ack, say }) => {
           .filter(msg => msg.user)
           .map(msg => msg.user)
       )];
-
       // Process users in parallel with rate limiting
       await Promise.all(userIds.map(async (userId, index) => {
         await new Promise(resolve => setTimeout(resolve, index * 100)); // 100ms spacing
@@ -57,14 +56,13 @@ app.command("/summarize", async ({ command, ack, say }) => {
 
       // Process messages
       for (const msg of result.messages) {
-        if (!msg.user || msg.subtype) continue;
+        if (!msg.user || msg.subtype || msg.bot_id) continue;
         const username = userCache.get(msg.user);
         userActivities[username] = [
           ...(userActivities[username] || []),
           `[${new Date(msg.ts * 1000).toLocaleDateString()}] ${msg.text}`
         ];
       }
-
       const activityText = Object.entries(userActivities)
         .map(([user, msgs]) => `${user}:\n${msgs.join("\n")}`)
         .join("\n\n");
