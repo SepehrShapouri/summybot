@@ -15,72 +15,108 @@ const openai = new OpenAI({
 
 app.command("/summarize", async ({ command, ack, say }) => {
     try {
-      await ack();
-      
-      
+      // Immediate acknowledgment with loading message
+      await ack({
+        response_type: "ephemeral",
+        text: ":hourglass: Generating weekly report..."
+      });
+
+      // Post visible in-channel message
+      const processingMsg = await say({
+        text: ":robot_face: Starting weekly summary generation...",
+        channel: command.channel_id
+      });
+
       const oneWeekAgo = Math.floor(Date.now() / 1000) - 604800;
       const result = await app.client.conversations.history({
         channel: command.channel_id,
         oldest: oneWeekAgo.toString(),
         limit: 1000
       });
-  
-      
+
       const userActivities = {};
-      const userCache = new Map(); 
-      
-      for (const msg of result.messages) {
-        if (!msg.user || msg.subtype) continue; 
-        
-        
-        if (!userCache.has(msg.user)) {
-          try {
-            const userInfo = await app.client.users.info({ user: msg.user });
-            userCache.set(msg.user, userInfo.user.real_name || userInfo.user.name);
-          } catch (error) {
-            userCache.set(msg.user, `User ${msg.user.substring(0, 6)}`);
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 500));
+      const userCache = new Map();
+
+      // Batch user lookup for better performance
+      const userIds = [...new Set(
+        result.messages
+          .filter(msg => msg.user)
+          .map(msg => msg.user)
+      )];
+
+      // Process users in parallel with rate limiting
+      await Promise.all(userIds.map(async (userId, index) => {
+        await new Promise(resolve => setTimeout(resolve, index * 100)); // 100ms spacing
+        try {
+          const userInfo = await app.client.users.info({ user: userId });
+          userCache.set(userId, userInfo.user.real_name || userInfo.user.name);
+        } catch (error) {
+          userCache.set(userId, `User ${userId.substring(0, 6)}`);
         }
-        
+      }));
+
+      // Process messages
+      for (const msg of result.messages) {
+        if (!msg.user || msg.subtype) continue;
         const username = userCache.get(msg.user);
-        if (!userActivities[username]) userActivities[username] = [];
-        
-        userActivities[username].push(
+        userActivities[username] = [
+          ...(userActivities[username] || []),
           `[${new Date(msg.ts * 1000).toLocaleDateString()}] ${msg.text}`
-        );
+        ];
       }
-  
-      
+
       const activityText = Object.entries(userActivities)
-        .map(([user, messages]) => `User ${user}:\n${messages.join("\n")}`)
+        .map(([user, msgs]) => `${user}:\n${msgs.join("\n")}`)
         .join("\n\n");
-  
+
       if (!activityText) {
-        await say("No user activity found in the last week.");
+        await say({
+          text: "No activity found this week.",
+          channel: command.channel_id,
+          thread_ts: processingMsg.ts
+        });
         return;
       }
-  
-      
+
+      // Update with progress
+      await app.client.chat.update({
+        channel: command.channel_id,
+        ts: processingMsg.ts,
+        text: ":mag: Analyzing messages..."
+      });
+
+      // Generate summary
       const completion = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{
           role: "user",
-          content: `Create a weekly work summary grouped by user. For each user, list their key contributions \
-          based on these messages. Focus on completed tasks, decisions made, and important discussions. \
-          Format as: [User] - Summary of contributions\n\nMessages:\n${activityText}`
+          content: `Create a weekly summary grouped by user from these Slack messages. 
+          For each user, list their key contributions in bullet points. 
+          Focus on completed tasks and decisions. Format:
+          
+          *User Name*
+          - Contribution 1
+          - Contribution 2
+          
+          Messages:\n${activityText}`
         }]
       });
-  
-      await say(`*Weekly User Contributions for <#${command.channel_id}>:*\n${completion.choices[0].message.content}`);
-      
+
+      // Final update with results
+      await app.client.chat.update({
+        channel: command.channel_id,
+        ts: processingMsg.ts,
+        text: `*Weekly Summary for <#${command.channel_id}>:*\n${completion.choices[0].message.content}`
+      });
+
     } catch (error) {
       console.error("Error:", error);
-      await say(`❌ Failed to generate summary: ${error.message}`);
+      await say({
+        text: `:warning: Failed to generate summary: ${error.message}`,
+        channel: command.channel_id
+      });
     }
-  });
-  
+});
 
 (async () => {
   const port = 3000;
