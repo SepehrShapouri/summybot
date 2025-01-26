@@ -22,6 +22,7 @@ port: process.env.PORT || 3000,
 slack: {
     botToken: process.env.SLACK_BOT_TOKEN,
     signingSecret: process.env.SLACK_SIGNING_SECRET,
+    appToken:process.env.SLACK_APP_TOKEN,
     rateLimit: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100 // limit each IP to 100 requests per windowMs

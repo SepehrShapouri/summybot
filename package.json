@@ -2,7 +2,7 @@
 "name": "slackify",
 "version": "1.0.0",
 "description": "A Slack bot that provides weekly channel summaries using AI",
-"type": "module",
+"type": "commonjs",
 "main": "src/index.js",
 "engines": {
     "node": ">=18.0.0",

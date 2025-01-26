@@ -1,8 +1,8 @@
 require('dotenv').config();
 const { App } = require('@slack/bolt');
 const winston = require('winston');
-const config = require('./src/config');
-const commandHandlers = require('./src/handlers/commands');
+const config = require('./config');
+const commandHandlers = require('./handlers/commands');
 
 // Configure Winston logger
 const logger = winston.createLogger({
@@ -22,10 +22,10 @@ transports: [
 
 // Initialize the Slack app with config
 const app = new App({
-token: config.SLACK_BOT_TOKEN,
-signingSecret: config.SLACK_SIGNING_SECRET,
+token: "xoxb-7911827745026-8351023238450-29tIegc8EWC2uWErJRutQju1",
+signingSecret: "1bc2160e80f45db7590da08e1ee4e341",
 socketMode: true,
-appToken: config.SLACK_APP_TOKEN,
+appToken:"xapp-1-A08A4BT35QW-8363721635825-042a4aeb96b4214de91d1f5ed861024d6cbc713c189f09bcb81d80a84ff3be3a",
 customRoutes: [
     {
     path: '/health',
