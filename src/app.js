@@ -15,9 +15,9 @@ const receiver = new ExpressReceiver({
   installationStore: {
     storeInstallation,
     fetchInstallation
-  }
+  },
+  stateVerification:true
 });
-
 const app = new App({ receiver });
 
 // Middleware
