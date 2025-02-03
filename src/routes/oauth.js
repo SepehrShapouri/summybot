@@ -29,5 +29,5 @@ module.exports = (receiver) => {
       }
     });
   
-    receiver.router.use('/auth', router);
+    receiver.router.use('/', router);
   };
