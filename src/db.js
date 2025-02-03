@@ -52,12 +52,29 @@ const storeInstallation = async (installation) => {
     expiresAt
   ]);
 };
-const fetchInstallation = async (teamId) => {
+const fetchInstallation = async (installQuery) => {
+  // Get teamId from the query object or use it directly if it's a string
+  const teamId = typeof installQuery === 'string' ? installQuery : installQuery.teamId;
+  
   const { rows } = await pool.query(
-    'SELECT bot_token FROM installations WHERE team_id = $1',
+    'SELECT * FROM installations WHERE team_id = $1',
     [teamId]
   );
-  return rows[0];
+  
+  if (rows.length === 0) return undefined;
+  
+  // Transform the database record into the format Bolt expects
+  return {
+    team: { id: rows[0].team_id },
+    bot: {
+      token: rows[0].bot_token,
+      refreshToken: rows[0].bot_refresh_token,
+      expiresAt: rows[0].bot_token_expires_at
+        ? Math.floor(new Date(rows[0].bot_token_expires_at).getTime() / 1000)
+        : undefined
+    },
+    tokenType: 'bot'
+  };
 };
 
 module.exports = { pool, createTables, storeInstallation, fetchInstallation };
