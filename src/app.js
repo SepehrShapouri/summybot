@@ -16,7 +16,6 @@ const receiver = new ExpressReceiver({
     storeInstallation,
     fetchInstallation
   },
-  stateVerification:true
 });
 const app = new App({ receiver });
 

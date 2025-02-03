@@ -41,14 +41,17 @@ const storeInstallation = async (installation) => {
       bot_token_expires_at = EXCLUDED.bot_token_expires_at
   `;
   
+  const expiresAt = installation.bot.expiresAt 
+    ? new Date(installation.bot.expiresAt * 1000)
+    : null;
+  
   await pool.query(query, [
     installation.team.id,
     installation.bot.token,
-    installation.bot.refreshToken,
-    new Date(installation.bot.expiresAt * 1000)
+    installation.bot.refreshToken || null,
+    expiresAt
   ]);
 };
-
 const fetchInstallation = async (teamId) => {
   const { rows } = await pool.query(
     'SELECT bot_token FROM installations WHERE team_id = $1',
