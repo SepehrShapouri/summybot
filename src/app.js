@@ -9,14 +9,8 @@ require('dotenv').config();
 createTables().catch(console.error);
 
 // Create the receiver
+// Create the receiver with OAuth settings
 const receiver = new ExpressReceiver({
-signingSecret: process.env.SLACK_SIGNING_SECRET,
-processBeforeResponse: true
-});
-
-// Create the app
-const app = new App({
-receiver,
 signingSecret: process.env.SLACK_SIGNING_SECRET,
 clientId: process.env.SLACK_CLIENT_ID,
 clientSecret: process.env.SLACK_CLIENT_SECRET,
@@ -24,10 +18,31 @@ stateSecret: process.env.SLACK_STATE_SECRET,
 scopes: ['commands', 'channels:history', 'users:read', 'chat:write'],
 installationStore: {
     storeInstallation,
-    fetchInstallation
-}
+    fetchInstallation,
+},
+processBeforeResponse: true
 });
 
+// Create the app with the configured receiver
+const app = new App({
+receiver,
+authorize: async ({ teamId, enterpriseId }) => {
+    try {
+    const installation = await fetchInstallation({ teamId, enterpriseId, isEnterpriseInstall: !!enterpriseId });
+    if (!installation) {
+        throw new Error('Installation not found');
+    }
+    return {
+        botToken: installation.bot.token,
+        botId: installation.bot.id,
+        botUserId: installation.bot.userId
+    };
+    } catch (error) {
+    console.error('Authorization error:', error);
+    throw error;
+    }
+}
+});
 // Initialize OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -123,8 +138,21 @@ console.error('Express error:', err);
 res.status(500).send('Internal Server Error');
 });
 
-// Import routes
-require('./routes/oauth')(receiver);
+// OAuth success handler
+receiver.router.get('/slack/oauth_redirect', async (req, res) => {
+try {
+    const installation = await receiver.installer.handleCallback(req, res);
+    res.send('App installed successfully! You can close this window.');
+} catch (error) {
+    console.error('OAuth error:', error);
+    res.status(500).send('OAuth error: ' + error.message);
+}
+});
+
+// Home page with install button
+receiver.router.get('/', (_req, res) => {
+res.send(`<a href="https://slack.com/oauth/v2/authorize?client_id=${process.env.SLACK_CLIENT_ID}&scope=${process.env.SCOPES}&redirect_uri=${process.env.SLACK_REDIRECT_URI}"><img alt=""Add to Slack"" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>`);
+});
 
 // Start server
 const port = process.env.PORT || 3000;
