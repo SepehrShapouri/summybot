@@ -23,24 +23,16 @@ installationStore: {
 processBeforeResponse: true
 });
 
-// Create the app with the configured receiver
 const app = new App({
 receiver,
-authorize: async ({ teamId, enterpriseId }) => {
-    try {
-    const installation = await fetchInstallation({ teamId, enterpriseId, isEnterpriseInstall: !!enterpriseId });
-    if (!installation) {
-        throw new Error('Installation not found');
-    }
-    return {
-        botToken: installation.bot.token,
-        botId: installation.bot.id,
-        botUserId: installation.bot.userId
-    };
-    } catch (error) {
-    console.error('Authorization error:', error);
-    throw error;
-    }
+signingSecret: process.env.SLACK_SIGNING_SECRET,
+clientId: process.env.SLACK_CLIENT_ID,
+clientSecret: process.env.SLACK_CLIENT_SECRET,
+stateSecret: process.env.SLACK_STATE_SECRET,
+scopes: ['commands', 'channels:history', 'users:read', 'chat:write'],
+installationStore: {
+    storeInstallation,
+    fetchInstallation
 }
 });
 // Initialize OpenAI
