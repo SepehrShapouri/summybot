@@ -11,14 +11,28 @@ const receiver = new ExpressReceiver({
   clientId: process.env.SLACK_CLIENT_ID,
   clientSecret: process.env.SLACK_CLIENT_SECRET,
   stateSecret: process.env.SLACK_STATE_SECRET,
+  processBeforeResponse:true,
   scopes: ['commands', 'channels:history', 'users:read', 'chat:write'],
   installationStore: {
     storeInstallation,
     fetchInstallation
   },
 });
-const app = new App({ receiver });
+const app = new App({
+  receiver,
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  clientId: process.env.SLACK_CLIENT_ID,
+  clientSecret: process.env.SLACK_CLIENT_SECRET,
+  stateSecret: process.env.SLACK_STATE_SECRET,
+  scopes: ['commands', 'channels:history', 'users:read', 'chat:write'],
+  installationStore: {
+    storeInstallation: require('./db').storeInstallation,
+    fetchInstallation: require('./db').fetchInstallation
+  }
+});
 
+// Use the receiver's router
+receiver.router.use(express.json());
 // Middleware
 receiver.router.use(express.json());
 receiver.router.use((err, req, res, next) => {

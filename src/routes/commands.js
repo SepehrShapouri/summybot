@@ -6,6 +6,7 @@ module.exports = (app) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   app.command('/summarize', async ({ command, ack, respond }) => {
+    console.log("summarize called")
     try {
       // Acknowledge immediately
       await ack();
