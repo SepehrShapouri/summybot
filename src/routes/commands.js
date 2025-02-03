@@ -14,7 +14,7 @@ module.exports = (app) => {
       const installation = await fetchInstallation(command.team_id);
       if (!installation) throw new Error('Workspace not installed properly');
       console.log('installation fetched',installation,installation.bot_token,bot)
-      const teamClient = new WebClient(installation.bot_token);
+      const teamClient = new WebClient(installation.bot.token);
 
       // Post initial message
       const processingMsg = await teamClient.chat.postMessage({
