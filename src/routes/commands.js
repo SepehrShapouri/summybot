@@ -1,3 +1,7 @@
+const { WebClient } = require('@slack/web-api');
+const { OpenAI } = require('openai');
+const { fetchInstallation } = require('../db');
+
 module.exports = (app) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
