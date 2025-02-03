@@ -13,7 +13,7 @@ module.exports = (app) => {
       // Fetch team-specific token
       const installation = await fetchInstallation(command.team_id);
       if (!installation) throw new Error('Workspace not installed properly');
-      console.log('installation fetched',installation,installation.bot_token,bot)
+      
       const teamClient = new WebClient(installation.bot.token);
 
       // Post initial message
