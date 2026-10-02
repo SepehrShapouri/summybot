@@ -6,8 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start":"node src/app.js",
     "dev":"nodemon src/app.js",
-    "migrate": "node -e 'require(\"./src/db\").createTables()'",
-    "preinstall": "node dist/setup.js"
+    "migrate": "node -e 'require(\"./src/db\").createTables()'"
   },
   "repository": {
     "type": "git",
